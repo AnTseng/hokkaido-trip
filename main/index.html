@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>北海道冬旅 2025</title>
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f7f6f2">
+    <link rel="apple-touch-icon" href="icon.png"> <!-- 稍後說明 icon -->
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f7f6f2;
+            color: #2d3436;
+            -webkit-tap-highlight-color: transparent;
+            /* iOS Safe Area handling */
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .japanese-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .nav-active { color: #b91c1c; font-weight: 700; }
+        .tag-transport { background-color: #e0f2fe; color: #0369a1; }
+        .tag-food { background-color: #ffedd5; color: #c2410c; }
+        .tag-sight { background-color: #dcfce7; color: #15803d; }
+        .tag-stay { background-color: #f3e8ff; color: #7e22ce; }
+        html { scroll-behavior: smooth; }
+        .ai-tip {
+            border-left: 3px solid #b91c1c;
+            background: #fff5f5;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body x-data="tripApp()">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 bg-[#f7f6f2]/95 backdrop-blur-md border-b border-gray-200 pt-10 pb-4 px-4 shadow-sm">
+        <div class="flex justify-between items-end">
+            <div>
+                <h2 class="text-xs text-gray-500 tracking-widest uppercase">HOKKAIDO 2025</h2>
+                <h1 class="text-2xl font-bold text-gray-800">冬の旅</h1>
+            </div>
+            <div class="text-right">
+                <span class="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600">12/20 - 12/28</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-28 pb-24 px-4 min-h-screen">
+        
+         <!-- VIEW: ITINERARY -->
+        <div x-show="currentTab === 'itinerary'" x-transition.opacity>
+            <template x-for="(day, index) in itinerary" :key="index">
+                <div class="mb-8">
+                    <!-- Date Header -->
+                    <div class="flex items-center justify-between mb-4 sticky top-24 z-10 bg-[#f7f6f2] py-2">
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-bold text-[#b91c1c]" x-text="day.dateStr"></span>
+                            <span class="text-sm font-medium text-gray-400" x-text="day.weekday"></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
+                            <i :class="day.weatherIcon"></i>
+                            <span x-text="day.temp"></span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 mb-2 pl-1" x-text="day.route"></div>
+
+                    <!-- Events -->
+                    <div class="space-y-4">
+                        <template x-for="event in day.events" :key="event.id">
+                            <div class="bg-white p-4 rounded-xl japanese-shadow relative border-l-4" 
+                                 :class="{
+                                    'border-blue-400': event.type === 'transport',
+                                    'border-orange-400': event.type === 'food',
+                                    'border-green-400': event.type === 'sight',
+                                    'border-purple-400': event.type === 'stay'
+                                 }">
+                                
+                                <!-- Time & Tag -->
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-xs font-mono font-bold text-gray-400" x-text="event.time"></span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wide"
+                                          :class="{
+                                            'tag-transport': event.type === 'transport',
+                                            'tag-food': event.type === 'food',
+                                            'tag-sight': event.type === 'sight',
+                                            'tag-stay': event.type === 'stay'
+                                          }" x-text="event.typeLabel"></span>
+                                </div>
+
+                                <!-- Title -->
+                                <h3 class="text-lg font-bold text-gray-800 leading-tight mb-1" x-text="event.title"></h3>
+                                <p x-show="event.desc" class="text-sm text-gray-500 mb-2" x-text="event.desc"></p>
+
+                                <!-- AI Tour Guide Tips -->
+                                <div x-show="event.tips" class="ai-tip rounded-md">
+                                    <div class="flex items-start gap-2">
+                                        <i class="fa-solid fa-lightbulb text-yellow-500 mt-1"></i>
+                                        <div>
+                                            <span class="font-bold text-[#b91c1c] text-xs block mb-0.5">TRAVEL TIP</span>
+                                            <span x-html="event.tips"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-3 flex gap-2">
+                                    <a :href="event.mapUrl" target="_blank" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold py-2 rounded-lg text-center transition flex items-center justify-center gap-1 border border-gray-200">
+                                        <i class="fa-solid fa-location-arrow text-blue-500"></i> 導航
+                                    </a>
+                                    <button x-show="event.link" @click="window.open(event.link)" class="px-3 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold py-2 rounded-lg border border-gray-200">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- VIEW: INFO (Flights & Hotels) -->
+        <div x-show="currentTab === 'info'" x-transition.opacity class="space-y-6">
+            
+            <!-- Hotels Card -->
+            <div class="bg-white rounded-xl japanese-shadow p-5">
+                <h3 class="text-lg font-bold mb-4 border-b pb-2">🏨 住宿資訊</h3>
+                <div class="space-y-4">
+                    <div class="pb-3 border-b border-gray-100 last:border-0">
+                        <div class="text-xs text-gray-400">Day 1-3 (旭川)</div>
+                        <div class="font-bold text-gray-800">OMO7 旭川 (星野集團)</div>
+                        <a href="https://goo.gl/maps/AsahikawaOMO7" target="_blank" class="text-xs text-blue-500 underline mt-1 block">查看地圖</a>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100 last:border-0">
+                        <div class="text-xs text-gray-400">Day 3-5 (函館)</div>
+                        <div class="font-bold text-gray-800">函館 JR Inn</div>
+                        <div class="text-xs text-gray-500">位於車站旁，交通便利</div>
+                         <a href="https://goo.gl/maps/HakodateJRInn" target="_blank" class="text-xs text-blue-500 underline mt-1 block">查看地圖</a>
+                    </div>
+                    <div class="pb-3 border-b border-gray-100 last:border-0">
+                        <div class="text-xs text-gray-400">Day 5-9 (札幌)</div>
+                        <div class="font-bold text-gray-800">札幌京王廣場飯店</div>
+                         <a href="https://goo.gl/maps/KeioPlazaSapporo" target="_blank" class="text-xs text-blue-500 underline mt-1 block">查看地圖</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flights Card -->
+            <div class="bg-white rounded-xl japanese-shadow p-5">
+                <h3 class="text-lg font-bold mb-4 border-b pb-2">✈️ 航班資訊</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">TPE</div>
+                        <div class="text-xs text-gray-500">06:15</div>
+                    </div>
+                    <div class="text-xs text-gray-400 flex flex-col items-center">
+                        <span>BR166</span>
+                        <i class="fa-solid fa-plane text-gray-300 my-1"></i>
+                        <span>3h 45m</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">CTS</div>
+                        <div class="text-xs text-gray-500">11:00</div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">CTS</div>
+                        <div class="text-xs text-gray-500">15:20</div>
+                    </div>
+                    <div class="text-xs text-gray-400 flex flex-col items-center">
+                        <span>BR115</span>
+                        <i class="fa-solid fa-plane text-gray-300 my-1 transform rotate-180"></i>
+                        <span>4h 45m</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold">TPE</div>
+                        <div class="text-xs text-gray-500">19:05</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency -->
+            <div class="bg-red-50 rounded-xl p-5 border border-red-100">
+                <h3 class="text-lg font-bold text-red-800 mb-2">🆘 緊急聯絡</h3>
+                <ul class="text-sm text-red-700 space-y-1">
+                    <li>警察局: 110</li>
+                    <li>火警/救護車: 119</li>
+                    <li>外交部旅外救助: +81-80-1009-7179</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- VIEW: BUDGET (已連接 Firebase) -->
+        <div x-show="currentTab === 'budget'" x-transition.opacity>
+            <div class="bg-white rounded-xl japanese-shadow p-5 mb-6">
+                <h3 class="text-gray-500 text-sm mb-1">總支出 (日幣)</h3>
+                <!-- Show Loading state if connecting -->
+                <div x-show="loading" class="text-sm text-gray-400">同步中...</div>
+                <div x-show="!loading" class="text-4xl font-bold text-gray-800">¥<span x-text="totalExpense"></span></div>
+            </div>
+
+            <div class="bg-white rounded-xl japanese-shadow p-5 mb-6">
+                <h4 class="font-bold mb-3 text-sm text-gray-600">新增記帳</h4>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" x-model="newItemName" placeholder="項目" class="w-2/3 bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200">
+                    <input type="number" x-model="newItemCost" placeholder="¥" class="w-1/3 bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200">
+                </div>
+                <button @click="addExpense()" class="w-full bg-[#2d3748] text-white py-3 rounded-lg font-bold text-sm hover:bg-gray-700 transition">新增</button>
+            </div>
+
+            <div class="space-y-2 pb-20">
+                <template x-for="item in expenses" :key="item.id">
+                    <div class="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-100">
+                        <span class="text-gray-700" x-text="item.name"></span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-bold" x-text="'¥' + item.cost"></span>
+                            <button @click="removeExpense(item.id)" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 z-50 flex justify-between items-center pb-6">
+        <button @click="currentTab = 'itinerary'" class="flex flex-col items-center gap-1 w-16 transition" :class="currentTab === 'itinerary' ? 'nav-active' : 'text-gray-400'"><i class="fa-solid fa-map"></i><span class="text-[10px]">行程</span></button>
+        <button @click="currentTab = 'info'" class="flex flex-col items-center gap-1 w-16 transition" :class="currentTab === 'info' ? 'nav-active' : 'text-gray-400'"><i class="fa-solid fa-suitcase"></i><span class="text-[10px]">資訊</span></button>
+        <button @click="currentTab = 'budget'" class="flex flex-col items-center gap-1 w-16 transition" :class="currentTab === 'budget' ? 'nav-active' : 'text-gray-400'"><i class="fa-solid fa-yen-sign"></i><span class="text-[10px]">記帳</span></button>
+    </nav>
+
+    <!-- Scripts: Alpine + Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import Alpine from 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/module.esm.js';
+
+        // ⚠️【請填入您的 Firebase Config】⚠️
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNilQq3XGVLnlorZsi0blt0-9y73ctPq0",
+            authDomain: "hokkaido-trip-2025-7d81b.firebaseapp.com",
+            projectId: "hokkaido-trip-2025-7d81b",
+            storageBucket: "hokkaido-trip-2025-7d81b.firebasestorage.app",
+            messagingSenderId: "465206983896",
+            appId: "1:465206983896:web:70ccec37a4c215f15fabad",
+            measurementId: "G-2HQ49JQ0PK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const expensesCol = collection(db, "expenses");
+
+        // Alpine Data Logic
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('tripApp', () => ({
+                currentTab: 'itinerary',
+                newItemName: '',
+                newItemCost: '',
+                expenses: [],
+                loading: true,
+                itinerary: [
+                    {
+                        dateStr: "12/20", weekday: "Sat", route: "台北 ➔ 旭川",
+                        temp: "-4°C / -1°C", weatherIcon: "fa-solid fa-snowflake text-blue-300",
+                        events: [
+                            { id: 1, time: "06:15", type: "transport", typeLabel: "Flight", title: "BR166 飛往札幌", desc: "桃園機場 T2 -> 新千歲機場", mapUrl: "https://goo.gl/maps/TPE" },
+                            { id: 2, time: "11:00", type: "transport", typeLabel: "入境", title: "抵達新千歲機場", desc: "領取 JR Pass / 換匯", mapUrl: "https://goo.gl/maps/CTS" },
+                            { id: 3, time: "14:00", type: "transport", typeLabel: "JR", title: "前往旭川", desc: "JR Kamui / Lilac 號 (約 1.5hr)", mapUrl: "https://goo.gl/maps/CTS", tips: "記得在機場買一些飯糰或便當在車上吃。" },
+                            { id: 4, time: "16:00", type: "stay", typeLabel: "Check-in", title: "OMO7 旭川", desc: "星野集團都市觀光飯店", mapUrl: "https://goo.gl/maps/AsahikawaOMO7", tips: "飯店有免費的『Go-KINJO』地圖，記得索取周邊美食指南。" },
+                            { id: 5, time: "18:00", type: "food", typeLabel: "晚餐", title: "成吉思汗大黑屋 本店", desc: "需現場排隊", mapUrl: "https://maps.app.goo.gl/daikokuya", tips: "必點：<b>生羊肉 (Namaramu)</b> 和 <b>帶骨羊排</b>。建議 16:30 就去排隊，不然會等很久！" },
+                        ]
+                    },
+                    {
+                        dateStr: "12/21", weekday: "Sun", route: "旭川 (滑雪日)",
+                        temp: "-6°C / -2°C", weatherIcon: "fa-solid fa-snowflake text-blue-300",
+                        events: [
+                            { id: 21, time: "07:50", type: "transport", typeLabel: "Bus", title: "接駁巴士往神居", desc: "OMO7 門口上車", mapUrl: "https://goo.gl/maps/AsahikawaOMO7", tips: "請確認前一天是否已預約巴士 (22:00前)。" },
+                            { id: 22, time: "09:00", type: "sight", typeLabel: "Ski", title: "神居滑雪場 (Kamui)", desc: "全日滑雪 / 教練課 9:30 開始", mapUrl: "https://maps.app.goo.gl/KamuiSkiLinks" },
+                            { id: 23, time: "15:50", type: "transport", typeLabel: "Bus", title: "返回市區", desc: "搭乘返程接駁車", mapUrl: "" },
+                            { id: 24, time: "17:00", type: "food", typeLabel: "Coffee", title: "珈琲亭 Chiroru", desc: "復古喫茶店", mapUrl: "https://maps.app.goo.gl/Chiroru", tips: "推薦：<b>招牌鬆餅</b>，非常有昭和風情的老店。" },
+                            { id: 25, time: "19:00", type: "food", typeLabel: "晚餐", title: "梅光軒 拉麵", desc: "旭川醬油拉麵代表", mapUrl: "https://maps.app.goo.gl/Baikohken", tips: "必點：<b>醬油奶油玉米拉麵</b>，濃郁暖身。" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/22", weekday: "Mon", route: "旭川 ➔ 函館",
+                        temp: "-3°C / 0°C", weatherIcon: "fa-solid fa-cloud text-gray-400",
+                        events: [
+                            { id: 31, time: "08:00", type: "sight", typeLabel: "Ski", title: "神居滑雪場 (Day 2)", desc: "享受最後滑雪時光", mapUrl: "https://maps.app.goo.gl/KamuiSkiLinks" },
+                            { id: 32, time: "17:00", type: "transport", typeLabel: "JR", title: "移動：旭川 -> 札幌", desc: "Ltd. Exp. Lilac", mapUrl: "" },
+                            { id: 33, time: "18:46", type: "transport", typeLabel: "JR", title: "移動：札幌 -> 函館", desc: "Ltd. Exp. Hokuto (約 3.5hr)", mapUrl: "", tips: "車程很長，務必在札幌站買著名的<b>『海鮮便當』</b>或<b>『石狩鮭魚便當』</b>上車吃。" },
+                            { id: 34, time: "22:30", type: "stay", typeLabel: "Hotel", title: "函館 JR Inn", desc: "Check-in / 休息", mapUrl: "https://maps.app.goo.gl/HakodateJRInn" },
+                            { id: 35, time: "22:40", type: "food", typeLabel: "宵夜", title: "和酒 角打 うえ田舎", desc: "喝一杯暖暖身", mapUrl: "https://maps.app.goo.gl/Uedas", tips: "專賣北海道地酒，適合小酌。" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/23", weekday: "Tue", route: "函館一日遊",
+                        temp: "-1°C / 2°C", weatherIcon: "fa-solid fa-sun text-yellow-500",
+                        events: [
+                            { id: 41, time: "08:00", type: "food", typeLabel: "早餐", title: "函館朝市", desc: "釣烏賊 / 海鮮丼", mapUrl: "https://maps.app.goo.gl/HakodateMorningMarket", tips: "必試：<b>釣活烏賊</b>，現釣現殺非常鮮甜！" },
+                            { id: 42, time: "10:00", type: "sight", typeLabel: "景點", title: "五稜郭公園", desc: "登上塔台看星形堡壘", mapUrl: "https://maps.app.goo.gl/Goryokaku" },
+                            { id: 43, time: "12:00", type: "food", typeLabel: "午餐", title: "幸運小丑漢堡", desc: "五稜郭前店", mapUrl: "https://maps.app.goo.gl/LuckyPierrot", tips: "必點：<b>中華雞腿漢堡 (Chinese Chicken Burger)</b> Set No.1。份量很大！" },
+                            { id: 44, time: "14:00", type: "sight", typeLabel: "散步", title: "金森紅磚倉庫 & 八幡坂", desc: "港灣美景 / 知名斜坡", mapUrl: "https://maps.app.goo.gl/Kanemori", tips: "八幡坂是日劇名場景，從坡頂往下拍可以看到海。" },
+                            { id: 45, time: "16:00", type: "sight", typeLabel: "夜景", title: "函館山纜車", desc: "百萬夜景 (需提早上山卡位)", mapUrl: "https://maps.app.goo.gl/MtHakodate", tips: "日落時間約 16:10，建議 15:30 就去排纜車，人潮非常多。" },
+                            { id: 46, time: "19:00", type: "food", typeLabel: "晚餐", title: "Nebokke (根ぼっけ)", desc: "居酒屋 / 烤魚", mapUrl: "https://maps.app.goo.gl/Nebokke", tips: "招牌是<b>烤花鯽魚 (Hokke)</b>，肉質非常厚實。" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/24", weekday: "Wed", route: "函館 ➔ 札幌",
+                        temp: "-2°C / 1°C", weatherIcon: "fa-solid fa-cloud-meatball text-gray-300",
+                        events: [
+                            { id: 51, time: "10:05", type: "transport", typeLabel: "JR", title: "前往大沼公園", desc: "Hokuto 7 號", mapUrl: "" },
+                            { id: 52, time: "11:00", type: "sight", typeLabel: "景點", title: "大沼國定公園", desc: "雪景 / 結冰湖面", mapUrl: "https://maps.app.goo.gl/OnumaPark", tips: "著名的『千之風』誕生地，適合買<b>『沼之家』</b>的醬油紅豆糰子當點心。" },
+                            { id: 53, time: "14:00", type: "transport", typeLabel: "JR", title: "前往札幌", desc: "Hokuto 13 號", mapUrl: "" },
+                            { id: 54, time: "17:30", type: "sight", typeLabel: "Event", title: "大通公園 聖誕市集", desc: "慕尼黑聖誕市集 & 燈飾", mapUrl: "https://maps.app.goo.gl/OdoriPark", tips: "平安夜氣氛最濃厚的地方！記得買一杯<b>熱紅酒</b>暖身。" },
+                            { id: 55, time: "19:00", type: "food", typeLabel: "晚餐", title: "札幌拉麵", desc: "薄野周邊 (信玄/空/雪風)", mapUrl: "https://goo.gl/maps/SapporoRamenAlley", tips: "若排不到名店，拉麵橫丁內也有很多不錯的選擇。" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/25", weekday: "Thu", route: "札幌 ↔ 小樽",
+                        temp: "-3°C / 0°C", weatherIcon: "fa-solid fa-snowflake text-blue-300",
+                        events: [
+                            { id: 61, time: "08:00", type: "food", typeLabel: "早餐", title: "場外市場", desc: "海鮮丼", mapUrl: "https://maps.app.goo.gl/OuterMarket" },
+                            { id: 62, time: "10:00", type: "transport", typeLabel: "JR", title: "前往小樽", desc: "快速 Airport 號", mapUrl: "", tips: "建議坐右側座位，可以看到海。" },
+                            { id: 63, time: "11:30", type: "food", typeLabel: "午餐", title: "宝すし (Takasushi)", desc: "壽司名店", mapUrl: "https://maps.app.goo.gl/Takasushi", tips: "建議事先請飯店櫃檯幫忙電話預約。" },
+                            { id: 64, time: "13:00", type: "sight", typeLabel: "散步", title: "小樽運河 & 堺町通", desc: "玻璃館 / 音樂盒堂", mapUrl: "https://maps.app.goo.gl/OtaruCanal", tips: "必買伴手禮：<b>LeTAO 雙層起司蛋糕</b>、<b>北果樓 妖精之森年輪蛋糕</b>、<b>六花亭 萊姆葡萄夾心餅乾</b>。" },
+                            { id: 65, time: "15:00", type: "food", typeLabel: "甜點", title: "Un délice", desc: "布丁大福", mapUrl: "https://maps.app.goo.gl/Undelice" },
+                            { id: 66, time: "16:00", type: "sight", typeLabel: "夜景", title: "天狗山纜車", desc: "情書電影場景", mapUrl: "https://maps.app.goo.gl/Tenguyama" },
+                            { id: 67, time: "19:00", type: "food", typeLabel: "晚餐", title: "湯咖哩", desc: "Suage+ 或 Samurai", mapUrl: "https://maps.app.goo.gl/Suage", tips: "湯咖哩記得要加點『起司飯』(Cheese on Rice)。" },
+                            { id: 68, time: "21:00", type: "food", typeLabel: "甜點", title: "GELATERIA La Giostra", desc: "深夜義式冰淇淋", mapUrl: "https://maps.app.goo.gl/LaGiostra", tips: "週五週六才開到凌晨，把握機會！" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/26", weekday: "Fri", route: "札幌市區 / 郊區",
+                        temp: "-2°C / 1°C", weatherIcon: "fa-solid fa-cloud text-gray-400",
+                        events: [
+                            { id: 71, time: "08:00", type: "food", typeLabel: "早餐", title: "二條市場", desc: "市區海鮮", mapUrl: "https://maps.app.goo.gl/NijoMarket" },
+                            { id: 72, time: "09:00", type: "sight", typeLabel: "景點", title: "北海道大學", desc: "白楊木林道", mapUrl: "https://maps.app.goo.gl/HokkaidoUniv" },
+                            { id: 73, time: "10:30", type: "sight", typeLabel: "郊區", title: "國營瀧野鈴蘭丘陵公園", desc: "戶外雪上活動", mapUrl: "https://maps.app.goo.gl/TakinoSuzuran", tips: "這裡有超長雪胎溜滑梯，非常好玩！建議搭地鐵到真駒內站轉巴士。" },
+                            { id: 74, time: "14:00", type: "sight", typeLabel: "景點", title: "頭大佛殿 (Hill of the Buddha)", desc: "安藤忠雄設計", mapUrl: "https://maps.app.goo.gl/GreatBuddha", tips: "非常莊嚴且適合拍照的建築奇觀。" },
+                            { id: 75, time: "16:00", type: "sight", typeLabel: "景點", title: "白色戀人公園", desc: "歐風庭園點燈", mapUrl: "https://maps.app.goo.gl/ShiroiKoibito" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/27", weekday: "Sat", route: "札幌 (自由/購物)",
+                        temp: "-2°C / 1°C", weatherIcon: "fa-solid fa-bag-shopping text-pink-400",
+                        events: [
+                            { id: 81, time: "All Day", type: "sight", typeLabel: "Free", title: "札幌市區自由行", desc: "補貨 / 狸小路 / 購物中心", mapUrl: "https://maps.app.goo.gl/Tanukikoji", tips: "狸小路藥妝店激戰區，記得比價。唐吉訶德在狸小路 3 丁目。" },
+                            { id: 82, time: "12:00", type: "food", typeLabel: "午餐", title: "北海道神宮", desc: "(若昨日未去) 參拜 & 六花判官餅", mapUrl: "https://maps.app.goo.gl/HokkaidoShrine", tips: "神宮內的六花亭茶屋有賣現烤的『判官餅』，一定要吃！" }
+                        ]
+                    },
+                    {
+                        dateStr: "12/28", weekday: "Sun", route: "札幌 ➔ 台北",
+                        temp: "-1°C / 2°C", weatherIcon: "fa-solid fa-plane-departure text-gray-500",
+                        events: [
+                            { id: 91, time: "11:00", type: "transport", typeLabel: "Train", title: "前往新千歲機場", desc: "預留時間逛機場國內線", mapUrl: "https://goo.gl/maps/CTS", tips: "新千歲機場國內線超好逛！有哆啦A夢樂園、拉麵道場、Royce巧克力工廠。建議提早 3 小時到。" },
+                            { id: 92, time: "15:20", type: "transport", typeLabel: "Flight", title: "BR115 飛往台北", desc: "CTS -> TPE", mapUrl: "" }
+                        ]
+                    }
+                ],
+
+                init() {
+                    // 監聽 Firebase 資料庫變化
+                    const q = query(expensesCol, orderBy("timestamp", "desc"));
+                    onSnapshot(q, (snapshot) => {
+                        this.expenses = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+                        this.loading = false;
+                    });
+                },
+
+                get totalExpense() {
+                    return this.expenses.reduce((sum, item) => sum + parseInt(item.cost || 0), 0).toLocaleString();
+                },
+
+                async addExpense() {
+                    if (this.newItemName && this.newItemCost) {
+                        await addDoc(expensesCol, {
+                            name: this.newItemName,
+                            cost: parseInt(this.newItemCost),
+                            timestamp: Date.now()
+                        });
+                        this.newItemName = '';
+                        this.newItemCost = '';
+                    }
+                },
+
+                async removeExpense(id) {
+                    if(confirm('確定刪除?')) {
+                        await deleteDoc(doc(db, "expenses", id));
+                    }
+                }
+            }));
+        });
+        
+        Alpine.start();
+    </script>
+</body>
+</html>

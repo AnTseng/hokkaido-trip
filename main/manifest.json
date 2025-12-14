@@ -1,0 +1,16 @@
+{
+  "name": "北海道 2025",
+  "short_name": "北海道",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7f6f2",
+  "theme_color": "#f7f6f2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3061/3061263.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
